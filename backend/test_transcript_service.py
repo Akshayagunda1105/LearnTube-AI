@@ -1,7 +1,7 @@
 from app.services.transcript_service import fetch_transcript
 
 
-video_id = "i_LwzRVP7bg"
+video_id = "m2Jjbr380m0"
 
 result = fetch_transcript(video_id)
 
