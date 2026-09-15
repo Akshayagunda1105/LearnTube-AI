@@ -7,6 +7,12 @@ from app.services.vector_store import VectorStore
 EMBEDDING_DIMENSION = 3072
 
 
+# Temporary in-memory cache for RAG vector stores.
+# Key: video_id
+# Value: RAG data for that video
+rag_cache = {}
+
+
 def build_video_rag(video_id: str):
     """
     Build a FAISS vector store from a YouTube video's
@@ -33,7 +39,7 @@ def build_video_rag(video_id: str):
     # 6. Add the embedded chunks
     vector_store.add_chunks(embedded_chunks)
 
-    return {
+    rag_data = {
         "video_id": video_id,
         "language": transcript_data["language"],
         "language_code": transcript_data["language_code"],
@@ -41,3 +47,30 @@ def build_video_rag(video_id: str):
         "rag_chunks": rag_chunks,
         "vector_store": vector_store,
     }
+
+    # 7. Store the completed RAG data in memory
+    rag_cache[video_id] = rag_data
+
+    return rag_data
+
+
+def get_video_rag(video_id: str):
+    """
+    Return the cached RAG data for a video.
+    Build it only if it does not already exist.
+    """
+
+    if video_id in rag_cache:
+        return rag_cache[video_id]
+
+    return build_video_rag(video_id)
+
+def get_cached_video_rag(video_id: str):
+    """
+    Return RAG data from the cache.
+
+    Do not build a new RAG index if the video
+    has not been processed yet.
+    """
+
+    return rag_cache.get(video_id)
