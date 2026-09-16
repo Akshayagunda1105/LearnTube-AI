@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.videos import router as videos_router
 from app.routes.chat import router as chat_router
+from app.database.mongodb import check_mongodb_connection
 
 
 app = FastAPI(
@@ -39,6 +40,24 @@ def health_check():
     return {
         "status": "healthy"
     }
+
+
+@app.get("/health/db")
+def database_health_check():
+    try:
+        check_mongodb_connection()
+
+        return {
+            "status": "healthy",
+            "database": "connected"
+        }
+
+    except Exception as error:
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(error)
+        }
 
 
 @app.get("/api/test")
