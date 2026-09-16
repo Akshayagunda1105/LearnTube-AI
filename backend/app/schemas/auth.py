@@ -11,3 +11,13 @@ class SignupResponse(BaseModel):
     id: str
     name: str
     email: EmailStr
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: SignupResponse
