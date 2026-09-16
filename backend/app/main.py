@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.videos import router as videos_router
 from app.routes.chat import router as chat_router
+from app.routes.auth import router as auth_router
 from app.database.mongodb import check_mongodb_connection
 
 
@@ -26,6 +27,7 @@ app.add_middleware(
 # Register API routers
 app.include_router(videos_router)
 app.include_router(chat_router)
+app.include_router(auth_router)
 
 
 @app.get("/")
