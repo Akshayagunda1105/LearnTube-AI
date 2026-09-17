@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from bson import ObjectId
+
 
 def create_study_session_document(
     user_id: str,
@@ -19,6 +21,9 @@ def create_study_session_document(
     if not user_id or not user_id.strip():
         raise ValueError("User ID cannot be empty")
 
+    if not ObjectId.is_valid(user_id):
+        raise ValueError("Invalid user ID")
+
     if not video_id or not video_id.strip():
         raise ValueError("Video ID cannot be empty")
 
@@ -28,7 +33,7 @@ def create_study_session_document(
     now = datetime.now(timezone.utc)
 
     return {
-        "user_id": user_id,
+        "user_id": ObjectId(user_id),
         "video_id": video_id,
         "video_url": video_url,
         "title": title,
