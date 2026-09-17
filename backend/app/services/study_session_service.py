@@ -85,3 +85,39 @@ def get_study_session(
         "created_at": session["created_at"],
         "updated_at": session["updated_at"],
     }
+
+def get_user_study_sessions(
+    user_id: str,
+):
+    """
+    Retrieve all study sessions belonging to a specific user.
+    """
+
+    if not user_id or not user_id.strip():
+        raise ValueError("User ID cannot be empty")
+
+    if not ObjectId.is_valid(user_id):
+        raise ValueError("Invalid user ID")
+
+    sessions = study_sessions_collection.find({
+        "user_id": ObjectId(user_id)
+    }).sort(
+        "created_at",
+        -1
+    )
+
+    return [
+        {
+            "id": str(session["_id"]),
+            "user_id": str(session["user_id"]),
+            "video_id": session["video_id"],
+            "video_url": session["video_url"],
+            "title": session["title"],
+            "thumbnail": session["thumbnail"],
+            "original_language": session["original_language"],
+            "original_language_code": session["original_language_code"],
+            "created_at": session["created_at"],
+            "updated_at": session["updated_at"],
+        }
+        for session in sessions
+    ]

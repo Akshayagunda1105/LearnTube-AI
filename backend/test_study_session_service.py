@@ -5,10 +5,12 @@ from app.database.mongodb import study_sessions_collection
 from app.services.study_session_service import (
     create_study_session,
     get_study_session,
+    get_user_study_sessions,
 )
 
 
 USER_ID = "6aaa6b2c9398c80c9251e142"
+OTHER_USER_ID = "507f1f77bcf86cd799439011"
 
 
 def test_create_study_session():
@@ -75,11 +77,9 @@ def test_user_cannot_access_another_users_session():
         video_url="https://youtube.com/watch?v=pytest-owner-video",
     )
 
-    another_user_id = "507f1f77bcf86cd799439011"
-
     session = get_study_session(
         session_id=result["id"],
-        user_id=another_user_id,
+        user_id=OTHER_USER_ID,
     )
 
     assert session is None
@@ -130,3 +130,91 @@ def test_invalid_user_id():
             session_id="507f1f77bcf86cd799439012",
             user_id="invalid-user-id",
         )
+
+
+def test_get_user_study_sessions():
+    video_id_1 = "pytest-history-video-1"
+    video_id_2 = "pytest-history-video-2"
+
+    session_1 = create_study_session(
+        user_id=USER_ID,
+        video_id=video_id_1,
+        video_url="https://youtube.com/watch?v=pytest-history-video-1",
+        title="History Video 1",
+    )
+
+    session_2 = create_study_session(
+        user_id=USER_ID,
+        video_id=video_id_2,
+        video_url="https://youtube.com/watch?v=pytest-history-video-2",
+        title="History Video 2",
+    )
+
+    sessions = get_user_study_sessions(USER_ID)
+
+    session_ids = [session["id"] for session in sessions]
+
+    assert session_1["id"] in session_ids
+    assert session_2["id"] in session_ids
+
+    for session in sessions:
+        assert session["user_id"] == USER_ID
+
+    study_sessions_collection.delete_many({
+        "_id": {
+            "$in": [
+                ObjectId(session_1["id"]),
+                ObjectId(session_2["id"]),
+            ]
+        }
+    })
+
+
+def test_user_history_does_not_include_another_users_sessions():
+    own_session = create_study_session(
+        user_id=USER_ID,
+        video_id="pytest-own-history",
+        video_url="https://youtube.com/watch?v=pytest-own-history",
+        title="Own Session",
+    )
+
+    other_session = create_study_session(
+        user_id=OTHER_USER_ID,
+        video_id="pytest-other-history",
+        video_url="https://youtube.com/watch?v=pytest-other-history",
+        title="Other User Session",
+    )
+
+    sessions = get_user_study_sessions(USER_ID)
+
+    session_ids = [session["id"] for session in sessions]
+
+    assert own_session["id"] in session_ids
+    assert other_session["id"] not in session_ids
+
+    study_sessions_collection.delete_many({
+        "_id": {
+            "$in": [
+                ObjectId(own_session["id"]),
+                ObjectId(other_session["id"]),
+            ]
+        }
+    })
+
+
+def test_empty_user_history():
+    temporary_user_id = "507f1f77bcf86cd799439013"
+
+    sessions = get_user_study_sessions(temporary_user_id)
+
+    assert sessions == []
+
+
+def test_empty_user_id_for_history():
+    with pytest.raises(ValueError, match="User ID cannot be empty"):
+        get_user_study_sessions("")
+
+
+def test_invalid_user_id_for_history():
+    with pytest.raises(ValueError, match="Invalid user ID"):
+        get_user_study_sessions("invalid-user-id")
