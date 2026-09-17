@@ -9,6 +9,8 @@ database = client["learntube_ai"]
 
 users_collection = database["users"]
 
+study_sessions_collection = database["study_sessions"]
+
 
 def check_mongodb_connection():
     """
