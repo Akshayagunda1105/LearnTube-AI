@@ -5,7 +5,7 @@ from app.routes.videos import router as videos_router
 from app.routes.chat import router as chat_router
 from app.routes.auth import router as auth_router
 from app.database.mongodb import check_mongodb_connection
-
+from app.routes.study_sessions import router as study_sessions_router
 
 app = FastAPI(
     title="LearnTube AI API",
@@ -28,6 +28,7 @@ app.add_middleware(
 app.include_router(videos_router)
 app.include_router(chat_router)
 app.include_router(auth_router)
+app.include_router(study_sessions_router)
 
 
 @app.get("/")
