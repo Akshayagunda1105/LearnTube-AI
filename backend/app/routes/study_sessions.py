@@ -38,3 +38,56 @@ def create_session(
             status_code=400,
             detail=str(error)
         )
+
+from app.services.study_session_service import (
+    create_study_session,
+    get_study_session,
+    get_user_study_sessions,
+)
+
+@router.get("")
+def get_sessions(
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Retrieve all study sessions belonging to the authenticated user.
+    """
+
+    try:
+        return get_user_study_sessions(user_id)
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
+        )
+
+
+@router.get("/{session_id}")
+def get_session(
+    session_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Retrieve one study session belonging to the authenticated user.
+    """
+
+    try:
+        session = get_study_session(
+            session_id=session_id,
+            user_id=user_id,
+        )
+
+        if session is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Study session not found"
+            )
+
+        return session
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error)
+        )
