@@ -1,39 +1,29 @@
-import { useEffect, useState } from "react";
-import api from "./services/api";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
+import StudySession from "./pages/StudySession";
 
 function App() {
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const testBackendConnection = async () => {
-      try {
-        const response = await api.get("/api/test");
-        setMessage(response.data.message);
-      } catch (err) {
-        console.error(err);
-        setError("Could not connect to the backend.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    testBackendConnection();
-  }, []);
-
   return (
-    <div>
-      <h1>LearnTube AI</h1>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
 
-      <h2>Backend Connection</h2>
+        <Route path="/login" element={<Login />} />
 
-      {loading && <p>Connecting to backend...</p>}
+        <Route path="/signup" element={<Signup />} />
 
-      {message && <p>{message}</p>}
+        <Route path="/dashboard" element={<Dashboard />} />
 
-      {error && <p>{error}</p>}
-    </div>
+        <Route
+          path="/study/:sessionId"
+          element={<StudySession />}
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
