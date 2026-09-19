@@ -1,3 +1,5 @@
+import json
+
 from dotenv import load_dotenv
 from google import genai
 
@@ -133,30 +135,68 @@ Summary:
 
 def generate_final_summary(combined_summaries):
     """
-    Generate one final summary from multiple chunk summaries.
+    Generate a structured final summary from multiple
+    transcript chunk summaries.
 
-    Gemini receives the summaries produced from each transcript
-    chunk and combines them into one coherent summary.
+    Returns:
+        dict containing:
+        - overview
+        - key_points
+        - concepts
+        - takeaways
     """
 
     prompt = f"""
-You are creating the final summary of an educational YouTube video.
+You are creating the final study summary of an educational
+YouTube video.
 
 Below are summaries of different sections of the video.
 
-Create one coherent and informative summary of the entire video.
+Create one coherent and useful study summary containing:
+
+1. overview
+   - A concise explanation of what the entire video teaches.
+
+2. key_points
+   - The most important points from the video.
+   - Return these as a list of concise strings.
+
+3. concepts
+   - Identify the important concepts taught in the video.
+   - For each concept, provide:
+     - title
+     - explanation
+
+4. takeaways
+   - The most important things a learner should remember.
 
 Rules:
 - Use only information present in the provided summaries.
 - Do not invent facts or add outside information.
 - Combine related ideas instead of repeating them.
-- Focus on the most important concepts.
 - Preserve important technical terms.
 - Write in clear and concise English.
-- Organize the ideas in a logical order.
-- Return only the final summary.
-- Do not mention the chunk summaries.
-- Do not mention that you are an AI.
+- Make the result useful for a student revising the video.
+- Return ONLY valid JSON.
+- Do not wrap the JSON in Markdown code fences.
+
+Return exactly this structure:
+
+{{
+  "overview": "string",
+  "key_points": [
+    "string"
+  ],
+  "concepts": [
+    {{
+      "title": "string",
+      "explanation": "string"
+    }}
+  ],
+  "takeaways": [
+    "string"
+  ]
+}}
 
 Section summaries:
 
@@ -168,11 +208,65 @@ Section summaries:
         contents=prompt
     )
 
-    final_summary = response.text.strip()
-
-    if not final_summary:
+    if not response.text:
         raise ValueError(
             "Gemini returned an empty final summary"
+        )
+
+    response_text = response.text.strip()
+
+    # Handle the occasional Markdown code fence
+    # even though the prompt asks for plain JSON.
+    if response_text.startswith("```json"):
+        response_text = response_text[7:]
+
+    elif response_text.startswith("```"):
+        response_text = response_text[3:]
+
+    if response_text.endswith("```"):
+        response_text = response_text[:-3]
+
+    response_text = response_text.strip()
+
+    try:
+        final_summary = json.loads(response_text)
+
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            "Gemini returned invalid JSON"
+        ) from error
+
+    required_fields = [
+        "overview",
+        "key_points",
+        "concepts",
+        "takeaways",
+    ]
+
+    for field in required_fields:
+        if field not in final_summary:
+            raise ValueError(
+                f"Summary is missing required field: {field}"
+            )
+
+    if not isinstance(final_summary["overview"], str):
+        raise ValueError(
+            "Summary overview must be a string"
+        )
+
+    if not isinstance(final_summary["key_points"], list):
+        raise ValueError(
+            "Summary key_points must be a list"
+        )
+
+    if not isinstance(final_summary["concepts"], list):
+        raise ValueError(
+            "Summary concepts must be a list"
+        )
+
+    if not isinstance(final_summary["takeaways"], list):
+        raise ValueError(
+            "Summary takeaways must be a list"
         )
 
     return final_summary

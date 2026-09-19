@@ -116,5 +116,23 @@ It repeatedly divides the search space in half.
         combined_summaries
     )
 
-    assert isinstance(result, str)
-    assert len(result.strip()) > 0
+    assert isinstance(result, dict)
+
+    assert "overview" in result
+    assert "key_points" in result
+    assert "concepts" in result
+    assert "takeaways" in result
+
+    assert isinstance(result["overview"], str)
+    assert len(result["overview"].strip()) > 0
+
+    assert isinstance(result["key_points"], list)
+    assert isinstance(result["concepts"], list)
+    assert isinstance(result["takeaways"], list)
+
+    for concept in result["concepts"]:
+        assert "title" in concept
+        assert "explanation" in concept
+
+    print("\nGenerated structured summary:")
+    print(result)
