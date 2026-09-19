@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import VideoInput from "../components/VideoInput";
 
 function Dashboard() {
   const [sessions, setSessions] = useState([]);
@@ -33,6 +34,8 @@ function Dashboard() {
   return (
     <div>
       <h1>Dashboard</h1>
+
+      <VideoInput />
 
       {loading && <p>Loading study sessions...</p>}
 
