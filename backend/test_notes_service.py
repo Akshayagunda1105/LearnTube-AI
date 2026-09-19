@@ -1,5 +1,8 @@
 from app.services.notes_service import create_note_chunks
-
+from app.services.notes_service import (
+    create_note_chunks,
+    generate_chunk_notes,
+)
 
 def test_create_note_chunks():
     segments = [
@@ -128,3 +131,167 @@ def test_large_segment_is_not_split():
 
     assert chunks[0][0]["text"] == "A" * 150
     assert chunks[1][0]["text"] == "Small segment."
+
+def test_generate_chunk_notes(monkeypatch):
+    chunk = [
+        {
+            "id": 0,
+            "text": "Supervised learning uses labeled data.",
+            "start": 120,
+            "duration": 5,
+        },
+        {
+            "id": 1,
+            "text": "The model learns relationships between inputs and labels.",
+            "start": 125,
+            "duration": 5,
+        },
+    ]
+
+    class FakeResponse:
+        text = """
+        {
+            "title": "Supervised Learning",
+            "points": [
+                "Uses labeled data.",
+                "Learns relationships between inputs and labels."
+            ]
+        }
+        """
+
+    def mock_generate_content(model, contents):
+        return FakeResponse()
+
+    monkeypatch.setattr(
+        "app.services.notes_service.client.models.generate_content",
+        mock_generate_content,
+    )
+
+    result = generate_chunk_notes(chunk)
+
+    assert isinstance(result, dict)
+
+    assert result["title"] == "Supervised Learning"
+
+    assert result["timestamp"] == 120
+
+    assert isinstance(result["points"], list)
+    assert len(result["points"]) == 2
+
+
+def test_generate_chunk_notes_uses_first_segment_timestamp(
+    monkeypatch
+):
+    chunk = [
+        {
+            "id": 10,
+            "text": "First concept.",
+            "start": 45.5,
+            "duration": 4,
+        },
+        {
+            "id": 11,
+            "text": "Second concept.",
+            "start": 49.5,
+            "duration": 4,
+        },
+    ]
+
+    class FakeResponse:
+        text = """
+        {
+            "title": "Test Topic",
+            "points": [
+                "Important point."
+            ]
+        }
+        """
+
+    def mock_generate_content(model, contents):
+        return FakeResponse()
+
+    monkeypatch.setattr(
+        "app.services.notes_service.client.models.generate_content",
+        mock_generate_content,
+    )
+
+    result = generate_chunk_notes(chunk)
+
+    assert result["timestamp"] == 45.5
+
+
+def test_generate_chunk_notes_rejects_invalid_json(
+    monkeypatch
+):
+    chunk = [
+        {
+            "id": 0,
+            "text": "Some educational content.",
+            "start": 10,
+            "duration": 5,
+        }
+    ]
+
+    class FakeResponse:
+        text = "This is not valid JSON."
+
+    def mock_generate_content(model, contents):
+        return FakeResponse()
+
+    monkeypatch.setattr(
+        "app.services.notes_service.client.models.generate_content",
+        mock_generate_content,
+    )
+
+    try:
+        generate_chunk_notes(chunk)
+        assert False, "Expected ValueError"
+
+    except ValueError as error:
+        assert str(error) == "Gemini returned invalid JSON"
+
+
+def test_generate_chunk_notes_rejects_missing_points(
+    monkeypatch
+):
+    chunk = [
+        {
+            "id": 0,
+            "text": "Some educational content.",
+            "start": 10,
+            "duration": 5,
+        }
+    ]
+
+    class FakeResponse:
+        text = """
+        {
+            "title": "Some Topic"
+        }
+        """
+
+    def mock_generate_content(model, contents):
+        return FakeResponse()
+
+    monkeypatch.setattr(
+        "app.services.notes_service.client.models.generate_content",
+        mock_generate_content,
+    )
+
+    try:
+        generate_chunk_notes(chunk)
+        assert False, "Expected ValueError"
+
+    except ValueError as error:
+        assert str(error) == (
+            "Notes are missing required field: points"
+        )
+
+
+def test_generate_chunk_notes_rejects_empty_chunk():
+    try:
+        generate_chunk_notes([])
+        assert False, "Expected ValueError"
+
+    except ValueError as error:
+        assert str(error) == "Chunk cannot be empty"
