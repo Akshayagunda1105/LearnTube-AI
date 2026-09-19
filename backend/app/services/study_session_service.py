@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from bson import ObjectId
 
 from app.database.mongodb import study_sessions_collection
@@ -171,9 +173,64 @@ def update_study_session_summary(
         {
             "$set": {
                 "summary": summary,
-                "updated_at": __import__("datetime").datetime.now(
-                    __import__("datetime").timezone.utc
-                ),
+                "updated_at": datetime.now(timezone.utc),
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return None
+
+    return get_study_session(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+
+def update_study_session_notes(
+    session_id: str,
+    user_id: str,
+    notes: dict,
+):
+    """
+    Update the AI-generated notes of a study session
+    belonging to the authenticated user.
+    """
+
+    if not session_id or not session_id.strip():
+        raise ValueError("Session ID cannot be empty")
+
+    if not ObjectId.is_valid(session_id):
+        raise ValueError("Invalid session ID")
+
+    if not user_id or not user_id.strip():
+        raise ValueError("User ID cannot be empty")
+
+    if not ObjectId.is_valid(user_id):
+        raise ValueError("Invalid user ID")
+
+    if not isinstance(notes, dict):
+        raise ValueError("Notes must be a dictionary")
+
+    if "sections" not in notes:
+        raise ValueError(
+            "Notes are missing required field: sections"
+        )
+
+    if not isinstance(notes["sections"], list):
+        raise ValueError(
+            "Notes sections must be a list"
+        )
+
+    result = study_sessions_collection.update_one(
+        {
+            "_id": ObjectId(session_id),
+            "user_id": ObjectId(user_id),
+        },
+        {
+            "$set": {
+                "notes": notes,
+                "updated_at": datetime.now(timezone.utc),
             }
         }
     )

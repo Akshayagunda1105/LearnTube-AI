@@ -6,11 +6,37 @@ from app.services.study_session_service import (
     create_study_session,
     get_study_session,
     get_user_study_sessions,
+    update_study_session_notes,
 )
 
 
 USER_ID = "6aaa6b2c9398c80c9251e142"
 OTHER_USER_ID = "507f1f77bcf86cd799439011"
+
+
+def create_test_session():
+    """
+    Create a temporary study session for service tests.
+    """
+
+    result = create_study_session(
+        user_id=USER_ID,
+        video_id="pytest-notes-video",
+        video_url="https://youtube.com/watch?v=pytest-notes-video",
+        title="Notes Test Video",
+        original_language="English",
+        original_language_code="en",
+        original_transcript=[],
+        english_transcript=[
+            {
+                "text": "Machine learning allows systems to learn from data.",
+                "start": 0,
+                "duration": 5,
+            }
+        ],
+    )
+
+    return result["id"]
 
 
 def test_create_study_session():
@@ -101,7 +127,10 @@ def test_get_nonexistent_session():
 
 
 def test_empty_session_id():
-    with pytest.raises(ValueError, match="Session ID cannot be empty"):
+    with pytest.raises(
+        ValueError,
+        match="Session ID cannot be empty"
+    ):
         get_study_session(
             session_id="",
             user_id=USER_ID,
@@ -109,7 +138,10 @@ def test_empty_session_id():
 
 
 def test_invalid_session_id():
-    with pytest.raises(ValueError, match="Invalid session ID"):
+    with pytest.raises(
+        ValueError,
+        match="Invalid session ID"
+    ):
         get_study_session(
             session_id="invalid-id",
             user_id=USER_ID,
@@ -117,7 +149,10 @@ def test_invalid_session_id():
 
 
 def test_empty_user_id():
-    with pytest.raises(ValueError, match="User ID cannot be empty"):
+    with pytest.raises(
+        ValueError,
+        match="User ID cannot be empty"
+    ):
         get_study_session(
             session_id="507f1f77bcf86cd799439012",
             user_id="",
@@ -125,7 +160,10 @@ def test_empty_user_id():
 
 
 def test_invalid_user_id():
-    with pytest.raises(ValueError, match="Invalid user ID"):
+    with pytest.raises(
+        ValueError,
+        match="Invalid user ID"
+    ):
         get_study_session(
             session_id="507f1f77bcf86cd799439012",
             user_id="invalid-user-id",
@@ -211,10 +249,168 @@ def test_empty_user_history():
 
 
 def test_empty_user_id_for_history():
-    with pytest.raises(ValueError, match="User ID cannot be empty"):
+    with pytest.raises(
+        ValueError,
+        match="User ID cannot be empty"
+    ):
         get_user_study_sessions("")
 
 
 def test_invalid_user_id_for_history():
-    with pytest.raises(ValueError, match="Invalid user ID"):
+    with pytest.raises(
+        ValueError,
+        match="Invalid user ID"
+    ):
         get_user_study_sessions("invalid-user-id")
+
+
+def test_update_study_session_notes():
+    session_id = create_test_session()
+
+    notes = {
+        "sections": [
+            {
+                "title": "Machine Learning",
+                "timestamp": 0,
+                "points": [
+                    "Machine learning allows systems to learn from data."
+                ],
+            }
+        ]
+    }
+
+    try:
+        result = update_study_session_notes(
+            session_id=session_id,
+            user_id=USER_ID,
+            notes=notes,
+        )
+
+        assert result is not None
+        assert result["id"] == session_id
+        assert result["notes"] == notes
+
+        stored_session = study_sessions_collection.find_one({
+            "_id": ObjectId(session_id)
+        })
+
+        assert stored_session["notes"] == notes
+
+    finally:
+        study_sessions_collection.delete_one({
+            "_id": ObjectId(session_id)
+        })
+
+
+def test_update_study_session_notes_rejects_invalid_session_id():
+    notes = {
+        "sections": []
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid session ID"
+    ):
+        update_study_session_notes(
+            session_id="invalid-id",
+            user_id=USER_ID,
+            notes=notes,
+        )
+
+
+def test_update_study_session_notes_rejects_invalid_user_id():
+    session_id = str(ObjectId())
+
+    notes = {
+        "sections": []
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid user ID"
+    ):
+        update_study_session_notes(
+            session_id=session_id,
+            user_id="invalid-user-id",
+            notes=notes,
+        )
+
+
+def test_update_study_session_notes_rejects_missing_sections():
+    session_id = create_test_session()
+
+    try:
+        with pytest.raises(
+            ValueError,
+            match="Notes are missing required field: sections"
+        ):
+            update_study_session_notes(
+                session_id=session_id,
+                user_id=USER_ID,
+                notes={},
+            )
+
+    finally:
+        study_sessions_collection.delete_one({
+            "_id": ObjectId(session_id)
+        })
+
+
+def test_update_study_session_notes_rejects_invalid_sections_type():
+    session_id = create_test_session()
+
+    notes = {
+        "sections": "not-a-list"
+    }
+
+    try:
+        with pytest.raises(
+            ValueError,
+            match="Notes sections must be a list"
+        ):
+            update_study_session_notes(
+                session_id=session_id,
+                user_id=USER_ID,
+                notes=notes,
+            )
+
+    finally:
+        study_sessions_collection.delete_one({
+            "_id": ObjectId(session_id)
+        })
+
+
+def test_update_study_session_notes_cannot_update_another_users_session():
+    session_id = create_test_session()
+
+    notes = {
+        "sections": [
+            {
+                "title": "Unauthorized Notes",
+                "timestamp": 0,
+                "points": [
+                    "This should not be stored."
+                ],
+            }
+        ]
+    }
+
+    try:
+        result = update_study_session_notes(
+            session_id=session_id,
+            user_id=OTHER_USER_ID,
+            notes=notes,
+        )
+
+        assert result is None
+
+        stored_session = study_sessions_collection.find_one({
+            "_id": ObjectId(session_id)
+        })
+
+        assert stored_session["notes"] == []
+
+    finally:
+        study_sessions_collection.delete_one({
+            "_id": ObjectId(session_id)
+        })
