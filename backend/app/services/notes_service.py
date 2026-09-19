@@ -177,3 +177,49 @@ Transcript:
     notes["timestamp"] = timestamp
 
     return notes
+
+
+def combine_note_sections(note_sections):
+    """
+    Combine chunk-level note sections into one ordered
+    notes document.
+
+    This function does not call Gemini.
+    It preserves the original order and timestamps.
+    """
+
+    if not note_sections:
+        raise ValueError("Note sections cannot be empty")
+
+    for section in note_sections:
+
+        if not isinstance(section, dict):
+            raise ValueError(
+                "Each note section must be a dictionary"
+            )
+
+        required_fields = [
+            "title",
+            "timestamp",
+            "points",
+        ]
+
+        for field in required_fields:
+            if field not in section:
+                raise ValueError(
+                    f"Note section is missing required field: {field}"
+                )
+
+        if not isinstance(section["title"], str):
+            raise ValueError(
+                "Note section title must be a string"
+            )
+
+        if not isinstance(section["points"], list):
+            raise ValueError(
+                "Note section points must be a list"
+            )
+
+    return {
+        "sections": note_sections
+    }

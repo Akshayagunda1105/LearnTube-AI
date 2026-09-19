@@ -1,8 +1,9 @@
-from app.services.notes_service import create_note_chunks
 from app.services.notes_service import (
     create_note_chunks,
     generate_chunk_notes,
+    combine_note_sections,
 )
+
 
 def test_create_note_chunks():
     segments = [
@@ -131,6 +132,7 @@ def test_large_segment_is_not_split():
 
     assert chunks[0][0]["text"] == "A" * 150
     assert chunks[1][0]["text"] == "Small segment."
+
 
 def test_generate_chunk_notes(monkeypatch):
     chunk = [
@@ -295,3 +297,99 @@ def test_generate_chunk_notes_rejects_empty_chunk():
 
     except ValueError as error:
         assert str(error) == "Chunk cannot be empty"
+
+
+def test_combine_note_sections():
+    note_sections = [
+        {
+            "title": "Machine Learning",
+            "timestamp": 0,
+            "points": [
+                "Machine learning allows systems to learn from data."
+            ],
+        },
+        {
+            "title": "Supervised Learning",
+            "timestamp": 120,
+            "points": [
+                "Supervised learning uses labeled data."
+            ],
+        },
+    ]
+
+    result = combine_note_sections(note_sections)
+
+    assert isinstance(result, dict)
+    assert "sections" in result
+
+    assert len(result["sections"]) == 2
+
+    assert (
+        result["sections"][0]["title"]
+        == "Machine Learning"
+    )
+
+    assert (
+        result["sections"][1]["title"]
+        == "Supervised Learning"
+    )
+
+
+def test_combine_note_sections_preserves_order():
+    note_sections = [
+        {
+            "title": "First Topic",
+            "timestamp": 100,
+            "points": ["First point."],
+        },
+        {
+            "title": "Second Topic",
+            "timestamp": 200,
+            "points": ["Second point."],
+        },
+        {
+            "title": "Third Topic",
+            "timestamp": 300,
+            "points": ["Third point."],
+        },
+    ]
+
+    result = combine_note_sections(note_sections)
+
+    timestamps = [
+        section["timestamp"]
+        for section in result["sections"]
+    ]
+
+    assert timestamps == [100, 200, 300]
+
+
+def test_combine_note_sections_rejects_empty_sections():
+    try:
+        combine_note_sections([])
+
+        assert False, "Expected ValueError"
+
+    except ValueError as error:
+        assert str(error) == (
+            "Note sections cannot be empty"
+        )
+
+
+def test_combine_note_sections_rejects_missing_field():
+    note_sections = [
+        {
+            "title": "Machine Learning",
+            "timestamp": 0,
+        }
+    ]
+
+    try:
+        combine_note_sections(note_sections)
+
+        assert False, "Expected ValueError"
+
+    except ValueError as error:
+        assert str(error) == (
+            "Note section is missing required field: points"
+        )
