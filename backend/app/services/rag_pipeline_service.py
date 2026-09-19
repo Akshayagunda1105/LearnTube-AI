@@ -36,7 +36,7 @@ def build_video_rag(video_id: str):
         dimension=EMBEDDING_DIMENSION
     )
 
-    # 6. Add the embedded chunks
+        # 6. Add the embedded chunks
     vector_store.add_chunks(embedded_chunks)
 
     rag_data = {
@@ -44,10 +44,13 @@ def build_video_rag(video_id: str):
         "language": transcript_data["language"],
         "language_code": transcript_data["language_code"],
         "is_generated": transcript_data["is_generated"],
+        "original_segments": transcript_data["original_segments"],
+        "english_segments": transcript_data["english_segments"],
         "rag_chunks": rag_chunks,
         "vector_store": vector_store,
     }
 
+    
     # 7. Store the completed RAG data in memory
     rag_cache[video_id] = rag_data
 
