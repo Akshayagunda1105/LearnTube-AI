@@ -40,6 +40,7 @@ def create_study_session(
         "video_url": session_document["video_url"],
     }
 
+
 def get_study_session(
     session_id: str,
     user_id: str,
@@ -86,11 +87,12 @@ def get_study_session(
         "updated_at": session["updated_at"],
     }
 
+
 def get_user_study_sessions(
     user_id: str,
 ):
     """
-    Retrieve all study sessions belonging to a specific user.
+    Retrieve all study sessions belonging to the authenticated user.
     """
 
     if not user_id or not user_id.strip():
@@ -121,3 +123,65 @@ def get_user_study_sessions(
         }
         for session in sessions
     ]
+
+
+def update_study_session_summary(
+    session_id: str,
+    user_id: str,
+    summary: dict,
+):
+    """
+    Update the AI-generated summary of a study session
+    belonging to the authenticated user.
+    """
+
+    if not session_id or not session_id.strip():
+        raise ValueError("Session ID cannot be empty")
+
+    if not ObjectId.is_valid(session_id):
+        raise ValueError("Invalid session ID")
+
+    if not user_id or not user_id.strip():
+        raise ValueError("User ID cannot be empty")
+
+    if not ObjectId.is_valid(user_id):
+        raise ValueError("Invalid user ID")
+
+    if not isinstance(summary, dict):
+        raise ValueError("Summary must be a dictionary")
+
+    required_fields = [
+        "overview",
+        "key_points",
+        "concepts",
+        "takeaways",
+    ]
+
+    for field in required_fields:
+        if field not in summary:
+            raise ValueError(
+                f"Summary is missing required field: {field}"
+            )
+
+    result = study_sessions_collection.update_one(
+        {
+            "_id": ObjectId(session_id),
+            "user_id": ObjectId(user_id),
+        },
+        {
+            "$set": {
+                "summary": summary,
+                "updated_at": __import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc
+                ),
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return None
+
+    return get_study_session(
+        session_id=session_id,
+        user_id=user_id,
+    )
