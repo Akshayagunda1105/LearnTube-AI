@@ -1,8 +1,9 @@
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem("access_token");
 
   const handleLogout = () => {
@@ -12,52 +13,78 @@ function Navbar() {
     navigate("/login", { replace: true });
   };
 
+  const isActive = (path) => location.pathname === path;
+
   return (
-    <nav
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "16px 24px",
-        borderBottom: "1px solid #ccc",
-        gap: "16px",
-        flexWrap: "wrap",
-      }}
-    >
-      <Link
-        to={token ? "/dashboard" : "/"}
-        style={{
-          fontSize: "1.3rem",
-          fontWeight: "bold",
-          textDecoration: "none",
-        }}
-      >
-        LearnTube AI
-      </Link>
+    <header className="site-header">
+      <nav className="app-nav" aria-label="Main navigation">
+        <Link
+          to={token ? "/dashboard" : "/"}
+          className="app-nav__brand"
+          aria-label="LearnTube AI home"
+        >
+          LearnTube <span>AI</span>
+        </Link>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "16px",
-        }}
-      >
-        {token ? (
-          <>
-            <Link to="/dashboard">Dashboard</Link>
+        <div className="app-nav__links">
+          {token ? (
+            <>
+              <Link
+                to="/dashboard"
+                className={`app-nav__link ${
+                  isActive("/dashboard")
+                    ? "app-nav__link--active"
+                    : ""
+                }`}
+                aria-current={
+                  isActive("/dashboard") ? "page" : undefined
+                }
+              >
+                Dashboard
+              </Link>
 
-            <button type="button" onClick={handleLogout}>
-              Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <Link to="/login">Login</Link>
-            <Link to="/signup">Sign Up</Link>
-          </>
-        )}
-      </div>
-    </nav>
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={handleLogout}
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className={`app-nav__link ${
+                  isActive("/login")
+                    ? "app-nav__link--active"
+                    : ""
+                }`}
+                aria-current={
+                  isActive("/login") ? "page" : undefined
+                }
+              >
+                Log in
+              </Link>
+
+              <Link
+                to="/signup"
+                className={`app-nav__link app-nav__link--signup ${
+                  isActive("/signup")
+                    ? "app-nav__link--active"
+                    : ""
+                }`}
+                aria-current={
+                  isActive("/signup") ? "page" : undefined
+                }
+              >
+                Sign up
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
+    </header>
   );
 }
 

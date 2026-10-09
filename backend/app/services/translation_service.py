@@ -187,13 +187,33 @@ Input segments:
         received_ids.add(segment_id)
 
         translation = str(
-            item["translation"]
+            item["translation"] or ""
         ).strip()
 
         if not translation:
-            raise ValueError(
-                f"Empty translation for segment {segment_id}"
+            # Preserve the segment's position and ID.
+            # Use the original text as a fallback.
+            original_segment = next(
+                (
+                    segment
+                    for segment in batch
+                    if segment["id"] == segment_id
+                ),
+                None,
             )
+
+            if original_segment is None:
+                raise ValueError(
+                    f"Could not find original segment {segment_id}"
+                )
+
+            translation = original_segment["text"].strip()
+
+            if not translation:
+                raise ValueError(
+                    f"Both translation and original text are empty "
+                    f"for segment {segment_id}"
+                )
 
         validated_translations.append(
             {

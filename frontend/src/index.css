@@ -1,111 +1,249 @@
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap");
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  font-family: "DM Sans", sans-serif;
+  color: #252820;
+  background: #F7F5EF;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Brand colors */
+  --paper: #F7F5EF;
+  --paper-deep: #EFEBE0;
+  --surface: #FFFEFA;
+  --ink: #252820;
+  --ink-soft: #41443A;
+  --muted: #74766B;
+  --olive: #687455;
+  --olive-hover: #536044;
+  --olive-soft: #E8EBDD;
+  --terracotta: #B96F52;
+  --terracotta-soft: #F4E7DF;
+  --border: #DEDCCF;
+  --border-strong: #C9C6B7;
+  --success: #496A4A;
+  --danger: #A4473C;
+
+  /* Design tokens */
+  --font-body: "DM Sans", sans-serif;
+  --font-display: "Newsreader", Georgia, serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-card: 0 3px 12px rgba(37, 40, 32, 0.045);
+  --shadow-hover: 0 8px 24px rgba(37, 40, 32, 0.08);
+  --content-width: 1160px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+* {
+  box-sizing: border-box;
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+html {
+  min-width: 320px;
+  min-height: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
+  min-width: 320px;
+  min-height: 100vh;
   margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.65;
 }
 
-#root {
-  width: 1126px;
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-body);
+}
+
+button,
+input,
+textarea,
+select {
+  font-size: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+a {
+  color: var(--olive);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--olive-hover);
+}
+
+img {
+  display: block;
   max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 h1,
 h2 {
-  font-family: var(--heading);
+  font-family: var(--font-display);
   font-weight: 500;
-  color: var(--text-h);
+  letter-spacing: -0.025em;
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  margin: 0 0 24px;
+  font-size: clamp(2.25rem, 4vw, 3.35rem);
+  line-height: 1.08;
 }
+
 h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  margin: 32px 0 14px;
+  font-size: clamp(1.6rem, 2.5vw, 2rem);
+  line-height: 1.2;
 }
+
+h3 {
+  margin: 18px 0 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+h4 {
+  margin: 16px 0 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
 p {
-  margin: 0;
+  margin: 0 0 14px;
+  color: var(--muted);
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+ul,
+ol {
+  padding-left: 24px;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+li {
+  margin-bottom: 7px;
+}
+
+label {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--surface);
+  color: var(--ink);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #99988D;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--olive);
+  box-shadow: 0 0 0 3px rgba(104, 116, 85, 0.13);
+}
+
+button {
+  min-height: 40px;
+  padding: 9px 16px;
+  border: 1px solid var(--olive);
+  border-radius: var(--radius-sm);
+  background: var(--olive);
+  color: #FFFFFF;
+  font-weight: 600;
+  line-height: 1.4;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--olive-hover);
+  background: var(--olive-hover);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+:focus-visible {
+  outline: 2px solid var(--terracotta);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: #DDE2CF;
+  color: var(--ink);
+}
+
+[role="alert"] {
+  padding: 11px 14px;
+  border: 1px solid #E5C4BA;
+  border-radius: var(--radius-sm);
+  background: #F9ECE7;
+  color: var(--danger);
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 2.3rem;
+  }
+
+  h2 {
+    font-size: 1.65rem;
+  }
 }

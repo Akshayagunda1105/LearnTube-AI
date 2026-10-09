@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 function Login() {
@@ -29,7 +30,10 @@ function Login() {
     setError("");
 
     try {
-      const response = await api.post("/api/auth/login", formData);
+      const response = await api.post(
+        "/api/auth/login",
+        formData
+      );
 
       const { access_token, user } = response.data;
 
@@ -42,7 +46,7 @@ function Login() {
 
       const detail = err.response?.data?.detail;
 
-      let message = "Unable to login. Please try again.";
+      let message = "Unable to log in. Please try again.";
 
       if (typeof detail === "string") {
         message = detail;
@@ -60,48 +64,124 @@ function Login() {
   };
 
   return (
-    <div>
-      <h1>Login</h1>
+    <main className="login-page">
+      <section className="login-layout">
+        <div className="login-welcome">
+          <span className="login-welcome__eyebrow">
+            YOUR PERSONAL LEARNING DESK
+          </span>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter your email"
-            required
-          />
+          <h1>
+            A little curiosity
+            <br />
+            goes a long way.
+          </h1>
+
+          <p className="login-welcome__description">
+            Turn the videos you love into knowledge you can
+            return to. Explore ideas, collect notes, and learn
+            at your own pace.
+          </p>
+
+          <div
+            className="login-art"
+            aria-hidden="true"
+          >
+            <div className="login-art__sun" />
+            <div className="login-art__page login-art__page--one" />
+            <div className="login-art__page login-art__page--two" />
+            <div className="login-art__line login-art__line--one" />
+            <div className="login-art__line login-art__line--two" />
+            <div className="login-art__line login-art__line--three" />
+            <div className="login-art__book">
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+
+          <p className="login-welcome__caption">
+            Watch something. Understand something. Keep it.
+          </p>
         </div>
 
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Enter your password"
-            required
-          />
+        <div className="login-form-panel">
+          <div className="login-form-panel__content">
+            <span className="login-form-panel__eyebrow">
+              YOUR LEARNING SPACE
+            </span>
+
+            <h2>Welcome back.</h2>
+
+            <p className="login-form-panel__description">
+              Sign in to continue where you left off.
+            </p>
+
+            <form
+              className="auth-form"
+              onSubmit={handleSubmit}
+            >
+              <div className="form-field">
+                <label htmlFor="login-email">
+                  Email address
+                </label>
+
+                <input
+                  id="login-email"
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="login-password">
+                  Password
+                </label>
+
+                <input
+                  id="login-password"
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <button
+                className="button button--primary auth-form__submit"
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Log in"}
+              </button>
+
+              <p className="login-signup-prompt">
+                Haven't joined us yet?{" "}
+                <Link to="/signup">Sign up</Link>
+              </p>
+            </form>
+          </div>
+
+          <p className="login-form-panel__footer">
+            Make room for what matters.
+          </p>
         </div>
-
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
-
-      {error && <p>{error}</p>}
-
-      <p>
-        Don't have an account?{" "}
-        <button type="button" onClick={() => navigate("/signup")}>
-          Sign Up
-        </button>
-      </p>
-    </div>
+      </section>
+    </main>
   );
 }
 

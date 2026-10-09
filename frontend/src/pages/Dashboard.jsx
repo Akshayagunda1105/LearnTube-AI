@@ -15,18 +15,16 @@ function Dashboard() {
     const loadSessions = async () => {
       try {
         const response = await api.get("/api/study-sessions");
-
         setSessions(response.data);
       } catch (err) {
         console.error(err);
 
         const detail = err.response?.data?.detail;
-
-        if (typeof detail === "string") {
-          setError(detail);
-        } else {
-          setError("Could not load study sessions.");
-        }
+        setError(
+          typeof detail === "string"
+            ? detail
+            : "Could not load study sessions."
+        );
       } finally {
         setLoading(false);
       }
@@ -36,9 +34,7 @@ function Dashboard() {
   }, []);
 
   const formatDate = (dateValue) => {
-    if (!dateValue) {
-      return "Date unavailable";
-    }
+    if (!dateValue) return "Date unavailable";
 
     const date = new Date(dateValue);
 
@@ -53,96 +49,104 @@ function Dashboard() {
     });
   };
 
-  const openSession = (sessionId) => {
-    navigate(`/study/${sessionId}`);
-  };
-
   return (
-    <div>
-      <h1>Dashboard</h1>
+    <main className="workspace">
+      <aside className="workspace-sidebar">
+        <div className="workspace-sidebar__heading">
+          <p className="eyebrow">YOUR LIBRARY</p>
+          <h2>Study history</h2>
+          <p>Pick up where you left off.</p>
+        </div>
 
-      <VideoInput />
+        <button
+          type="button"
+          className="button button--secondary workspace-sidebar__new"
+          onClick={() => navigate("/dashboard")}
+        >
+          + New video
+        </button>
 
-      <section>
-        <h2>Study History</h2>
-
-        {loading && <p>Loading study sessions...</p>}
-
-        {error && <p role="alert">{error}</p>}
-
-        {!loading && !error && (
-          <>
-            <p>
-              You have {sessions.length} study{" "}
-              {sessions.length === 1 ? "session" : "sessions"}.
-            </p>
-
-            {sessions.length === 0 ? (
-              <p>
-                No study sessions yet. Process a YouTube video
-                above to get started.
-              </p>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(260px, 1fr))",
-                  gap: "20px",
-                  marginTop: "20px",
-                }}
-              >
-                {sessions.map((session) => (
-                  <article
-                    key={session.id}
-                    style={{
-                      border: "1px solid #ccc",
-                      borderRadius: "8px",
-                      padding: "16px",
-                    }}
-                  >
-                    {session.thumbnail && (
-                      <img
-                        src={session.thumbnail}
-                        alt={session.title || "YouTube video thumbnail"}
-                        style={{
-                          width: "100%",
-                          borderRadius: "6px",
-                          marginBottom: "12px",
-                        }}
-                      />
-                    )}
-
-                    <h3>
-                      {session.title || `Video ${session.video_id}`}
-                    </h3>
-
-                    <p>
-                      <strong>Language:</strong>{" "}
-                      {session.original_language || "Unknown"}
-                    </p>
-
-                    <p>
-                      <strong>Studied on:</strong>{" "}
-                      {formatDate(
-                        session.created_at || session.updated_at
-                      )}
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() => openSession(session.id)}
-                    >
-                      Reopen Study Session
-                    </button>
-                  </article>
-                ))}
-              </div>
-            )}
-          </>
+        {loading && (
+          <p className="page-feedback">Loading sessions...</p>
         )}
+
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+
+        {!loading && !error && sessions.length === 0 && (
+          <p className="workspace-sidebar__empty">
+            Your previous sessions will appear here.
+          </p>
+        )}
+
+        {!loading && !error && sessions.length > 0 && (
+          <div className="workspace-sidebar__sessions">
+            {sessions.map((session) => (
+              <button
+                type="button"
+                className="history-item"
+                key={session.id}
+                onClick={() => navigate(`/study/${session.id}`)}
+              >
+                <span className="history-item__title">
+                  {session.title || `Video ${session.video_id}`}
+                </span>
+
+                <span className="history-item__meta">
+                  {session.original_language || "Unknown language"}
+                </span>
+
+                <span className="history-item__date">
+                  {formatDate(session.created_at || session.updated_at)}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </aside>
+
+      <section className="workspace-main">
+        <header className="workspace-intro">
+          <p className="eyebrow">YOUR LEARNING DESK</p>
+          <h1>
+            What shall we learn
+            <br />
+            <span className="dashboard-intro__accent">
+              today?
+            </span>
+          </h1>
+          <p>
+            Turn YouTube videos into useful notes, clear summaries,
+            and conversations that help ideas stick.
+          </p>
+        </header>
+
+        <section className="workspace-video">
+          <div className="section-heading">
+            <span className="section-heading__number">01</span>
+            <div>
+              <h2>Start with a video</h2>
+              <p>Bring something interesting to your study desk.</p>
+            </div>
+          </div>
+
+          <VideoInput />
+        </section>
+
+        <section className="workspace-placeholder">
+          <p className="eyebrow">YOUR STUDY TOOLS</p>
+          <h2>Learn at your own pace.</h2>
+          <p>
+            Process a video to open its study session, where you can
+            generate AI summaries and notes, explore the transcript,
+            and ask questions about the video.
+          </p>
+        </section>
       </section>
-    </div>
+    </main>
   );
 }
 
