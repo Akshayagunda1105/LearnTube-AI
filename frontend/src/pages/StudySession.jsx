@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
+import TranscriptViewer from "../components/TranscriptViewer";
 
 function StudySession() {
   const { sessionId } = useParams();
@@ -20,9 +21,11 @@ function StudySession() {
         const response = await api.get(
           `/api/study-sessions/${sessionId}`
         );
+
         setSession(response.data);
       } catch (err) {
         console.error(err);
+
         const detail = err.response?.data?.detail;
 
         setError(
@@ -53,6 +56,7 @@ function StudySession() {
       }));
     } catch (err) {
       console.error(err);
+
       const detail = err.response?.data?.detail;
 
       setSummaryError(
@@ -80,6 +84,7 @@ function StudySession() {
       }));
     } catch (err) {
       console.error(err);
+
       const detail = err.response?.data?.detail;
 
       setNotesError(
@@ -131,9 +136,11 @@ function StudySession() {
       <h1>Study Session</h1>
 
       <h2>Video</h2>
+
       <p>
         <strong>Video ID:</strong> {session.video_id}
       </p>
+
       <p>
         <strong>Video URL:</strong>{" "}
         <a
@@ -146,28 +153,40 @@ function StudySession() {
       </p>
 
       <h2>Transcript Information</h2>
+
       <p>
         <strong>Original Language:</strong>{" "}
         {session.original_language || "Unknown"}
       </p>
+
       <p>
         <strong>Language Code:</strong>{" "}
         {session.original_language_code || "Unknown"}
       </p>
+
       <p>
         <strong>Original Transcript Segments:</strong>{" "}
         {session.original_transcript?.length || 0}
       </p>
+
       <p>
         <strong>English Transcript Segments:</strong>{" "}
         {session.english_transcript?.length || 0}
       </p>
 
+      {/* Transcript Viewer */}
+      <TranscriptViewer
+        originalTranscript={session.original_transcript}
+        englishTranscript={session.english_transcript}
+      />
+
+      {/* AI Summary */}
       <h2>AI Summary</h2>
 
       {!summary && (
         <div>
           <p>Generate an AI-powered summary of this video.</p>
+
           <button
             type="button"
             onClick={handleGenerateSummary}
@@ -180,7 +199,9 @@ function StudySession() {
         </div>
       )}
 
-      {summaryError && <p role="alert">{summaryError}</p>}
+      {summaryError && (
+        <p role="alert">{summaryError}</p>
+      )}
 
       {summaryLoading && (
         <p>Please wait while the AI prepares your summary.</p>
@@ -192,6 +213,7 @@ function StudySession() {
           <p>{summary.overview}</p>
 
           <h3>Key Points</h3>
+
           {summary.key_points?.length > 0 ? (
             <ul>
               {summary.key_points.map((point, index) => (
@@ -203,6 +225,7 @@ function StudySession() {
           )}
 
           <h3>Key Concepts</h3>
+
           {summary.concepts?.length > 0 ? (
             <div>
               {summary.concepts.map((concept, index) => (
@@ -217,6 +240,7 @@ function StudySession() {
           )}
 
           <h3>Takeaways</h3>
+
           {summary.takeaways?.length > 0 ? (
             <ul>
               {summary.takeaways.map((takeaway, index) => (
@@ -229,11 +253,13 @@ function StudySession() {
         </div>
       )}
 
+      {/* AI Notes */}
       <h2>AI Notes</h2>
 
       {noteSections.length === 0 && (
         <div>
           <p>Generate structured study notes from this video.</p>
+
           <button
             type="button"
             onClick={handleGenerateNotes}
@@ -246,7 +272,9 @@ function StudySession() {
         </div>
       )}
 
-      {notesError && <p role="alert">{notesError}</p>}
+      {notesError && (
+        <p role="alert">{notesError}</p>
+      )}
 
       {notesLoading && (
         <p>Please wait while the AI prepares your notes.</p>
@@ -262,10 +290,9 @@ function StudySession() {
                 <p>
                   <strong>Timestamp:</strong>{" "}
                   {Math.floor(section.timestamp / 60)}:
-                  {String(Math.floor(section.timestamp % 60)).padStart(
-                    2,
-                    "0"
-                  )}
+                  {String(
+                    Math.floor(section.timestamp % 60)
+                  ).padStart(2, "0")}
                 </p>
               )}
 
