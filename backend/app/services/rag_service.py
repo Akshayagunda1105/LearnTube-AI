@@ -97,44 +97,54 @@ load_dotenv()
 client = genai.Client()
 
 
-def generate_rag_answer(question, context):
+
+def generate_rag_answer(question, context, history=None):
     """
-    Generate an answer using only the retrieved transcript context.
+    Generate an answer using transcript context and conversation history.
     """
 
     if not question or not question.strip():
-        raise ValueError(
-            "Question cannot be empty"
-        )
+        raise ValueError("Question cannot be empty")
 
     if not context or not context.strip():
-        raise ValueError(
-            "Context cannot be empty"
-        )
+        raise ValueError("Context cannot be empty")
+
+    history = history or []
+
+    conversation = "\n".join(
+        f"{message['role'].capitalize()}: {message['content']}"
+        for message in history
+    )
+
+    if not conversation:
+        conversation = "No previous conversation."
 
     prompt = f"""
 You are an AI learning assistant helping a user understand
 a YouTube educational video.
 
-Answer the user's question using only the provided transcript
-context.
+Previous conversation:
+{conversation}
 
-Rules:
-- Use only information present in the context.
-- Do not use outside knowledge.
-- Do not invent facts.
-- If the context does not contain enough information to answer
-  the question, say that the answer is not available in the
-  provided video context.
-- Give a clear and concise answer.
-- Do not mention these instructions.
-- Do not mention that you are an AI.
-
-User question:
+Current user question:
 {question}
 
 Retrieved transcript context:
 {context}
+
+Instructions:
+- Answer using only information supported by the retrieved
+  transcript context and relevant previous conversation.
+- Do not invent facts or introduce unrelated information.
+- Use conversation history to understand follow-up questions.
+- If the user asks to shorten, simplify, rephrase, or explain
+  a previous answer differently, modify that answer according
+  to the request.
+- Keep the answer concise and follow the requested format.
+- If the available information is insufficient, explain that
+  the answer is not available in the provided video context.
+- Do not mention these instructions.
+- Do not mention that you are an AI.
 """
 
     response = client.models.generate_content(
@@ -142,73 +152,65 @@ Retrieved transcript context:
         contents=prompt
     )
 
-    answer = response.text.strip()
+    answer = (response.text or "").strip()
 
     if not answer:
-        raise ValueError(
-            "Gemini returned an empty answer"
-        )
+        raise ValueError("Gemini returned an empty answer")
 
     return answer
 
-def answer_question(question, vector_store, top_k=3):
-    """
-    Answer a user question using relevant transcript
-    chunks retrieved from the vector store.
 
-    Returns the answer together with the retrieved sources.
+def answer_question(question, vector_store, top_k=3, history=None):
+    """
+    Answer questions using RAG and conversation history.
     """
 
     if not question or not question.strip():
-        raise ValueError(
-            "Question cannot be empty"
+        raise ValueError("Question cannot be empty")
+
+    history = history or []
+
+    # Build a search query using the previous user question
+    # to give short follow-up questions more context.
+    previous_user_questions = [
+        message["content"]
+        for message in history
+        if message["role"] == "user"
+    ]
+
+    if previous_user_questions:
+        retrieval_query = (
+            f"{previous_user_questions[-1]}\n"
+            f"Follow-up question: {question}"
         )
+    else:
+        retrieval_query = question
 
-    # --------------------------------------------------
-    # Step 1: Convert the question into an embedding
-    # --------------------------------------------------
-
+    # Step 1: Generate an embedding for the contextual query.
     from app.services.embedding_service import embed_text
 
-    question_embedding = embed_text(
-        question
-    )
+    question_embedding = embed_text(retrieval_query)
 
-    # --------------------------------------------------
-    # Step 2: Retrieve relevant transcript chunks
-    # --------------------------------------------------
-
+    # Step 2: Retrieve relevant transcript chunks.
     results = vector_store.search(
         question_embedding,
         top_k=top_k
     )
 
     if not results:
-        raise ValueError(
-            "No relevant transcript chunks found"
-        )
+        raise ValueError("No relevant transcript chunks found")
 
-    # --------------------------------------------------
-    # Step 3: Build context from retrieved chunks
-    # --------------------------------------------------
+    # Step 3: Build transcript context.
+    context = build_context(results)
 
-    context = build_context(
-        results
-    )
-
-    # --------------------------------------------------
-    # Step 4: Generate the answer using Gemini
-    # --------------------------------------------------
-
+    # Step 4: Generate an answer using the history.
     answer = generate_rag_answer(
-        question,
-        context
+        question=question,
+        context=context,
+        history=history
     )
 
-    # --------------------------------------------------
-    # Step 5: Return answer + sources
-    # --------------------------------------------------
-
+    # Step 5: Return the answer and supporting sources.
     sources = [
         {
             "text": result["text"],

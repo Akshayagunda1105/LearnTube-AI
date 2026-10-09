@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.chat import ChatRequest
@@ -31,7 +32,11 @@ def chat(request: ChatRequest):
         response = answer_question(
             request.question,
             rag_data["vector_store"],
-            top_k=3
+            top_k=3,
+            history=[
+                message.model_dump()
+                for message in request.history
+            ]
         )
 
         return response

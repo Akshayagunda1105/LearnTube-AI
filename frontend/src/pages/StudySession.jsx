@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
 import TranscriptViewer from "../components/TranscriptViewer";
+import ChatPanel from "../components/ChatPanel";
 
 function StudySession() {
   const { sessionId } = useParams();
@@ -135,6 +136,7 @@ function StudySession() {
     <div>
       <h1>Study Session</h1>
 
+      {/* Video Information */}
       <h2>Video</h2>
 
       <p>
@@ -152,6 +154,7 @@ function StudySession() {
         </a>
       </p>
 
+      {/* Transcript Information */}
       <h2>Transcript Information</h2>
 
       <p>
@@ -174,7 +177,6 @@ function StudySession() {
         {session.english_transcript?.length || 0}
       </p>
 
-      {/* Transcript Viewer */}
       <TranscriptViewer
         originalTranscript={session.original_transcript}
         englishTranscript={session.english_transcript}
@@ -309,6 +311,9 @@ function StudySession() {
           ))}
         </div>
       )}
+
+      {/* AI Chat */}
+      <ChatPanel videoId={session.video_id} />
     </div>
   );
 }
