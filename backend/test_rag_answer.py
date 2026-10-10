@@ -1,10 +1,13 @@
+
+from unittest.mock import MagicMock, patch
+
 from app.services.rag_service import (
     build_context,
     generate_rag_answer,
 )
 
 
-results = [
+RESULTS = [
     {
         "text": (
             "Supervised learning uses labeled examples "
@@ -26,42 +29,31 @@ results = [
 ]
 
 
-question = "How does supervised learning work?"
+def test_build_context():
+    context = build_context(RESULTS)
+
+    assert isinstance(context, str)
+    assert "Supervised learning" in context
+    assert "Unsupervised learning" in context
 
 
-print("RAG answer generation test")
-print("-" * 60)
+@patch("app.services.rag_service.client")
+def test_generate_rag_answer(mock_client):
+    expected_answer = (
+        "Supervised learning trains a model using labeled examples "
+        "so it can make predictions on new data."
+    )
 
+    mock_response = MagicMock()
+    mock_response.text = expected_answer
+    mock_client.models.generate_content.return_value = mock_response
 
-# Build context from retrieved chunks.
-context = build_context(results)
+    question = "How does supervised learning work?"
+    context = build_context(RESULTS)
 
+    answer = generate_rag_answer(question, context)
 
-print("Question:")
-print(question)
+    assert isinstance(answer, str)
+    assert answer.strip() == expected_answer
 
-
-print("\nGenerating answer...")
-print("-" * 60)
-
-
-answer = generate_rag_answer(
-    question,
-    context
-)
-
-
-print("\nAnswer:")
-print(answer)
-
-
-# --------------------------------------------------
-# Validation
-# --------------------------------------------------
-
-assert isinstance(answer, str)
-assert len(answer.strip()) > 0
-
-
-print("\n" + "-" * 60)
-print("RAG answer generation test passed successfully!")
+    mock_client.models.generate_content.assert_called_once()

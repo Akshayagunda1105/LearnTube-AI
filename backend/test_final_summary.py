@@ -1,63 +1,70 @@
+
+from unittest.mock import MagicMock, patch
+
 from app.services.summarizer_service import (
     combine_chunk_summaries,
     generate_final_summary,
 )
 
 
-chunk_summaries = [
-    {
-        "start": 0.0,
-        "end": 60.0,
-        "summary": (
-            "Machine learning allows computers to learn "
-            "patterns from data."
-        ),
-    },
-    {
-        "start": 60.0,
-        "end": 120.0,
-        "summary": (
-            "Supervised learning uses labeled examples "
-            "to train predictive models."
-        ),
-    },
-    {
-        "start": 120.0,
-        "end": 180.0,
-        "summary": (
-            "Unsupervised learning discovers patterns "
-            "in unlabeled data."
-        ),
-    },
-]
+def test_combine_chunk_summaries():
+    chunk_summaries = [
+        {
+            "start": 0.0,
+            "end": 60.0,
+            "summary": "Machine learning allows computers to learn patterns from data.",
+        },
+        {
+            "start": 60.0,
+            "end": 120.0,
+            "summary": "Supervised learning uses labeled examples to train predictive models.",
+        },
+        {
+            "start": 120.0,
+            "end": 180.0,
+            "summary": "Unsupervised learning discovers patterns in unlabeled data.",
+        },
+    ]
+
+    combined = combine_chunk_summaries(chunk_summaries)
+
+    assert isinstance(combined, str)
+    assert len(combined.strip()) > 0
+    assert "Machine learning" in combined
+    assert "Supervised learning" in combined
+    assert "Unsupervised learning" in combined
 
 
-print("Final summary generation test")
-print("-" * 60)
+@patch("app.services.summarizer_service.client")
+def test_generate_final_summary(mock_client):
+    expected_summary = {
+        "overview": "Machine learning identifies patterns in data.",
+        "key_points": [
+            "Supervised learning uses labeled data.",
+            "Unsupervised learning finds hidden patterns.",
+        ],
+        "concepts": [
+            {
+                "title": "Supervised learning",
+                "explanation": "A model learns from labeled examples.",
+            }
+        ],
+        "takeaways": [
+            "Choose a learning approach based on the problem."
+        ],
+    }
 
+    mock_response = MagicMock()
+    mock_response.text = __import__("json").dumps(expected_summary)
 
-combined = combine_chunk_summaries(
-    chunk_summaries
-)
+    mock_client.models.generate_content.return_value = mock_response
 
+    result = generate_final_summary(
+        "Machine learning learns patterns from data."
+    )
 
-print("Generating final summary...")
-print("-" * 60)
+    assert isinstance(result, dict)
+    assert result["overview"] == expected_summary["overview"]
+    assert len(result["key_points"]) == 2
 
-
-final_summary = generate_final_summary(
-    combined
-)
-
-
-print("\nFinal Summary")
-print("-" * 60)
-print(final_summary)
-
-
-assert isinstance(final_summary, str)
-assert len(final_summary.strip()) > 0
-
-
-print("\n" + "-" * 60)
-print("Final summary generation test passed successfully!")
+    mock_client.models.generate_content.assert_called_once()

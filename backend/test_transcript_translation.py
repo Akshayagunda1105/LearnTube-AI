@@ -1,128 +1,77 @@
-from youtube_transcript_api import YouTubeTranscriptApi
-from app.services.translation_service import create_batches, translate_batch
+
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from app.services.translation_service import create_batches
+from app.services.transcript_service import fetch_transcript
 
 
 VIDEO_ID = "m2Jjbr380m0"
 
 
-api = YouTubeTranscriptApi()
+@patch("app.services.transcript_service.translate_batch")
+@patch("app.services.transcript_service.YouTubeTranscriptApi")
+def test_transcript_translation_preserves_timestamps(
+    mock_api_class,
+    mock_translate_batch,
+):
+    # Fake four Telugu transcript segments.
+    snippets = [
+        SimpleNamespace(text="మొదటి భాగం", start=0.0, duration=2.0),
+        SimpleNamespace(text="రెండవ భాగం", start=2.0, duration=3.0),
+        SimpleNamespace(text="మూడవ భాగం", start=5.0, duration=2.5),
+        SimpleNamespace(text="నాలుగవ భాగం", start=7.5, duration=2.0),
+    ]
 
-transcript_list = api.list(VIDEO_ID)
-
-# Find the Telugu auto-generated transcript.
-transcript = next(
-    transcript
-    for transcript in transcript_list
-    if transcript.language_code == "te"
-)
-
-fetched = transcript.fetch()
-
-
-# Use only the first 4 segments for testing.
-original_segments = [
-    {
-        "text": snippet.text,
-        "start": snippet.start,
-        "duration": snippet.duration,
-    }
-    for snippet in fetched[:4]
-]
+    class FakeFetchedTranscript(list):
+        def __init__(self, snippets):
+            super().__init__(snippets)
+            self.language = "Telugu"
+            self.language_code = "te"
+            self.is_generated = True
 
 
-print("Transcript translation integration test")
-print("-" * 60)
+    fetched = FakeFetchedTranscript(snippets)
 
-print("Original language:", fetched.language)
-print("Language code:", fetched.language_code)
-print("Test segments:", len(original_segments))
-
-
-# Create batches.
-batches = create_batches(
-    original_segments,
-    max_chars=6000
-)
-
-print("Total batches:", len(batches))
-
-
-# Translate batches.
-translated_segments = []
-
-for batch_number, batch in enumerate(batches, start=1):
-
-    print(f"\nBatch {batch_number}")
-    print("-" * 60)
-
-    translations = translate_batch(
-        batch,
-        fetched.language
+    transcript = SimpleNamespace(
+        language_code="te",
+        is_generated=True,
+        fetch=lambda: fetched,
     )
 
-    translated_segments.extend(translations)
+    mock_api_class.return_value.list.return_value = [transcript]
 
-    for item in translations:
-        print(
-            f"ID: {item['id']} | "
-            f"Translation: {item['translation']}"
-        )
+    mock_translate_batch.return_value = [
+        {"id": 0, "translation": "First segment"},
+        {"id": 1, "translation": "Second segment"},
+        {"id": 2, "translation": "Third segment"},
+        {"id": 3, "translation": "Fourth segment"},
+    ]
 
+    result = fetch_transcript(VIDEO_ID)
 
-# Verify that the number of translations
-# matches the number of original segments.
-assert len(translated_segments) == len(original_segments)
+    original = result["original_segments"]
+    english = result["english_segments"]
 
+    assert len(original) == 4
+    assert len(english) == 4
 
-# Map translations by segment ID.
-translations_by_id = {
-    item["id"]: item["translation"]
-    for item in translated_segments
-}
+    for index in range(4):
+        assert english[index]["start"] == original[index]["start"]
+        assert english[index]["duration"] == original[index]["duration"]
 
-
-# Reconstruct English segments while preserving timestamps.
-english_segments = []
-
-for index, segment in enumerate(original_segments):
-
-    if index not in translations_by_id:
-        raise ValueError(
-            f"Missing translation for segment {index}"
-        )
-
-    english_segments.append(
-        {
-            "text": translations_by_id[index],
-            "start": segment["start"],
-            "duration": segment["duration"],
-        }
-    )
+    assert english[0]["text"] == "First segment"
+    assert english[3]["text"] == "Fourth segment"
+    mock_translate_batch.assert_called_once()
 
 
-# Verify that the final English transcript
-# contains the same number of segments.
-assert len(original_segments) == len(english_segments)
+def test_create_batches_for_transcript_segments():
+    segments = [
+        {"text": "First segment", "start": 0.0, "duration": 2.0},
+        {"text": "Second segment", "start": 2.0, "duration": 3.0},
+    ]
 
+    batches = create_batches(segments, max_chars=6000)
 
-print("\nTimestamp preservation check")
-print("-" * 60)
-
-
-for index, segment in enumerate(english_segments):
-
-    original = original_segments[index]
-
-    print(f"\nSegment {index}")
-    print("Original text :", original["text"])
-    print("English text  :", segment["text"])
-    print("Start         :", segment["start"])
-    print("Duration      :", segment["duration"])
-
-    # Verify timestamps were not changed during translation.
-    assert segment["start"] == original["start"]
-    assert segment["duration"] == original["duration"]
-
-
-print("\n" + "-" * 60)
-print("Integration test passed successfully!")
+    assert len(batches) >= 1
+    assert sum(len(batch) for batch in batches) == len(segments)

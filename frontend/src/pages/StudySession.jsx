@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import TranscriptViewer from "../components/TranscriptViewer";
 import ChatPanel from "../components/ChatPanel";
+import QuizPanel from "../components/QuizPanel";
 
 function StudySession() {
   const { sessionId } = useParams();
@@ -24,11 +25,10 @@ function StudySession() {
       setError("");
 
       try {
-        const [sessionResponse, historyResponse] =
-          await Promise.all([
-            api.get(`/api/study-sessions/${sessionId}`),
-            api.get("/api/study-sessions"),
-          ]);
+        const [sessionResponse, historyResponse] = await Promise.all([
+          api.get(`/api/study-sessions/${sessionId}`),
+          api.get("/api/study-sessions"),
+        ]);
 
         setSession(sessionResponse.data);
         setSessions(historyResponse.data);
@@ -150,6 +150,7 @@ function StudySession() {
       <aside className="study-workspace__sidebar">
         <p className="eyebrow">YOUR LIBRARY</p>
         <h2>Study history</h2>
+
         <p className="study-sidebar__description">
           Pick up where you left off.
         </p>
@@ -193,9 +194,7 @@ function StudySession() {
         <header className="study-hero">
           <p className="eyebrow">YOUR LEARNING DESK</p>
 
-          <h1>
-            {session.title || "Your study session"}
-          </h1>
+          <h1>{session.title || "Your study session"}</h1>
 
           <p className="study-hero__description">
             Revisit important ideas, make useful notes, and
@@ -217,9 +216,11 @@ function StudySession() {
           </div>
         </header>
 
+        {/* Study tools */}
         <section className="study-card">
           <p className="eyebrow">YOUR STUDY TOOLS</p>
           <h2>Learn at your own pace.</h2>
+
           <p>
             Create a summary or structured notes from this video.
           </p>
@@ -271,6 +272,7 @@ function StudySession() {
           </p>
         )}
 
+        {/* AI summary */}
         {summary && (
           <section className="study-card study-content">
             <p className="eyebrow">VIDEO SUMMARY</p>
@@ -280,6 +282,7 @@ function StudySession() {
             <p>{summary.overview}</p>
 
             <h3>Key points</h3>
+
             {summary.key_points?.length > 0 ? (
               <ul>
                 {summary.key_points.map((point, index) => (
@@ -291,6 +294,7 @@ function StudySession() {
             )}
 
             <h3>Key concepts</h3>
+
             {summary.concepts?.length > 0 ? (
               summary.concepts.map((concept, index) => (
                 <article key={index}>
@@ -303,6 +307,7 @@ function StudySession() {
             )}
 
             <h3>Takeaways</h3>
+
             {summary.takeaways?.length > 0 ? (
               <ul>
                 {summary.takeaways.map((takeaway, index) => (
@@ -321,6 +326,7 @@ function StudySession() {
           </p>
         )}
 
+        {/* AI notes */}
         {noteSections.length > 0 && (
           <section className="study-card study-content">
             <p className="eyebrow">YOUR NOTES</p>
@@ -357,6 +363,15 @@ function StudySession() {
           </section>
         )}
 
+        {/* MCQ quiz */}
+        <section className="study-card">
+          <QuizPanel
+            sessionId={sessionId}
+            savedQuiz={session.quiz || []}
+          />
+        </section>
+
+        {/* Transcript */}
         <section className="study-card">
           <p className="eyebrow">READ AND REVISIT</p>
           <h2>Transcript</h2>
@@ -366,6 +381,7 @@ function StudySession() {
               Original language:{" "}
               {session.original_language || "Unknown"}
             </span>
+
             <span>
               {session.english_transcript?.length || 0} English segments
             </span>
@@ -377,9 +393,11 @@ function StudySession() {
           />
         </section>
 
+        {/* AI chatbot */}
         <section className="study-card">
           <p className="eyebrow">EXPLORE FURTHER</p>
           <h2>Ask about this video.</h2>
+
           <p>
             Ask a question about the ideas or details covered
             in the video.

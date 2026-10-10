@@ -242,3 +242,50 @@ def update_study_session_notes(
         session_id=session_id,
         user_id=user_id,
     )
+
+
+def update_study_session_quiz(
+    session_id: str,
+    user_id: str,
+    quiz: list,
+):
+    """
+    Save a generated quiz to a study session belonging
+    to the authenticated user.
+    """
+
+    if not session_id or not session_id.strip():
+        raise ValueError("Session ID cannot be empty")
+
+    if not ObjectId.is_valid(session_id):
+        raise ValueError("Invalid session ID")
+
+    if not user_id or not user_id.strip():
+        raise ValueError("User ID cannot be empty")
+
+    if not ObjectId.is_valid(user_id):
+        raise ValueError("Invalid user ID")
+
+    if not isinstance(quiz, list) or len(quiz) != 10:
+        raise ValueError("Quiz must contain exactly 10 questions")
+
+    result = study_sessions_collection.update_one(
+        {
+            "_id": ObjectId(session_id),
+            "user_id": ObjectId(user_id),
+        },
+        {
+            "$set": {
+                "quiz": quiz,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    if result.matched_count == 0:
+        return None
+
+    return get_study_session(
+        session_id=session_id,
+        user_id=user_id,
+    )
