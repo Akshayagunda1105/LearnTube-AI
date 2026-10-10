@@ -106,6 +106,7 @@ class VectorStore:
 
             results.append(
                 {
+                    "chunk_id": chunk.get("chunk_id"),
                     "text": chunk["text"],
                     "start": chunk["start"],
                     "end": chunk["end"],

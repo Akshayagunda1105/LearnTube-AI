@@ -1,3 +1,4 @@
+
 from app.services.rag_service import create_rag_chunks
 
 
@@ -25,50 +26,31 @@ test_segments = [
 ]
 
 
-print("RAG chunking test")
-print("-" * 60)
+def test_rag_chunks_have_unique_ids_and_valid_timestamps():
+    chunks = create_rag_chunks(test_segments, max_chars=130)
+
+    assert isinstance(chunks, list)
+    assert len(chunks) > 0
+
+    # Every chunk must contain non-empty text and valid timestamps.
+    for chunk in chunks:
+        assert "chunk_id" in chunk
+        assert chunk["chunk_id"]
+        assert isinstance(chunk["text"], str)
+        assert chunk["text"].strip()
+        assert chunk["start"] < chunk["end"]
+
+    # Every chunk must have a unique ID.
+    chunk_ids = [chunk["chunk_id"] for chunk in chunks]
+    assert len(chunk_ids) == len(set(chunk_ids))
+
+    # IDs should follow the same order as the chunks.
+    expected_ids = [
+        f"chunk_{index:04d}"
+        for index in range(1, len(chunks) + 1)
+    ]
+    assert chunk_ids == expected_ids
 
 
-chunks = create_rag_chunks(
-    test_segments,
-    max_chars=130
-)
-
-
-print("Total chunks:", len(chunks))
-
-
-for index, chunk in enumerate(chunks, start=1):
-
-    print(f"\nChunk {index}")
-    print("-" * 60)
-
-    print("Start:", chunk["start"])
-    print("End:", chunk["end"])
-    print("Text:", chunk["text"])
-
-
-# Basic validation.
-assert isinstance(chunks, list)
-assert len(chunks) > 0
-
-
-# Verify every chunk has the required fields.
-for chunk in chunks:
-
-    assert "text" in chunk
-    assert "start" in chunk
-    assert "end" in chunk
-
-    assert isinstance(chunk["text"], str)
-    assert len(chunk["text"].strip()) > 0
-
-
-# Verify timestamps are valid.
-for chunk in chunks:
-
-    assert chunk["start"] < chunk["end"]
-
-
-print("\n" + "-" * 60)
-print("RAG chunking test passed successfully!")
+def test_empty_transcript_produces_no_chunks():
+    assert create_rag_chunks([]) == []

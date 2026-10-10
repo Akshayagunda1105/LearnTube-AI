@@ -95,3 +95,71 @@ def test_fetch_transcript_raises_when_no_transcript_exists(
         assert str(exc) == "No transcript available for this video"
     else:
         raise AssertionError("Expected ValueError for missing transcript")
+
+
+@patch("app.services.transcript_service.YouTubeTranscriptApi")
+def test_fetch_transcript_propagates_retrieval_failure(
+    mock_api_class,
+):
+    mock_api_class.return_value.list.side_effect = RuntimeError(
+        "Simulated YouTube API failure"
+    )
+
+    import pytest
+
+    with pytest.raises(
+        RuntimeError,
+        match="Simulated YouTube API failure",
+    ):
+        fetch_transcript(VIDEO_ID)
+
+
+@patch("app.services.transcript_service.translate_batch")
+@patch("app.services.transcript_service.YouTubeTranscriptApi")
+def test_fetch_transcript_rejects_missing_translation(
+    mock_api_class,
+    mock_translate_batch,
+):
+    fetched = make_transcript()
+
+    transcript = SimpleNamespace(
+        is_generated=True,
+        fetch=lambda: fetched,
+    )
+    mock_api_class.return_value.list.return_value = [transcript]
+
+    # Only the first of two segments is translated.
+    mock_translate_batch.return_value = [
+        {"id": 0, "translation": "First segment"}
+    ]
+
+    import pytest
+
+    with pytest.raises(
+        ValueError,
+        match="Missing translation for segment 1",
+    ):
+        fetch_transcript(VIDEO_ID)
+
+
+@patch("app.services.transcript_service.YouTubeTranscriptApi")
+def test_fetch_transcript_returns_empty_segments_when_transcript_is_empty(
+    mock_api_class,
+):
+    fetched = FakeFetchedTranscript(
+        snippets=[],
+        language="English",
+        language_code="en",
+        is_generated=False,
+    )
+
+    transcript = SimpleNamespace(
+        is_generated=False,
+        fetch=lambda: fetched,
+    )
+    mock_api_class.return_value.list.return_value = [transcript]
+
+    result = fetch_transcript(VIDEO_ID)
+
+    assert result["original_segments"] == []
+    assert result["english_segments"] == []

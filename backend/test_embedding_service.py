@@ -1,82 +1,52 @@
-from app.services.embedding_service import (
-    embed_text,
-    embed_chunks,
+
+import os
+
+import pytest
+
+from app.services.embedding_service import embed_text, embed_chunks
+
+
+@pytest.mark.skipif(
+    os.getenv("RUN_REAL_RAG_TEST") != "1",
+    reason="Live Gemini API test is opt-in.",
 )
+def test_embedding_service():
+    text = (
+        "Machine learning allows computers to learn "
+        "patterns from data."
+    )
 
+    embedding = embed_text(text)
 
-print("Embedding service test")
-print("-" * 60)
+    assert isinstance(embedding, list)
+    assert len(embedding) > 0
 
+    chunks = [
+        {
+            "text": (
+                "Machine learning allows computers "
+                "to learn patterns from data."
+            ),
+            "start": 0.0,
+            "end": 5.0,
+        },
+        {
+            "text": (
+                "Supervised learning uses labeled "
+                "examples to train predictive models."
+            ),
+            "start": 5.0,
+            "end": 10.0,
+        },
+    ]
 
-# --------------------------------------------------
-# Test 1: Single text embedding
-# --------------------------------------------------
+    embedded_chunks = embed_chunks(chunks)
 
-text = (
-    "Machine learning allows computers to learn "
-    "patterns from data."
-)
+    assert len(embedded_chunks) == len(chunks)
 
-print("\nTesting embed_text()...")
-
-embedding = embed_text(text)
-
-print("Vector dimensions:", len(embedding))
-print("First 5 values:", embedding[:5])
-
-
-assert isinstance(embedding, list)
-assert len(embedding) > 0
-
-
-# --------------------------------------------------
-# Test 2: Multiple RAG chunk embeddings
-# --------------------------------------------------
-
-chunks = [
-    {
-        "text": (
-            "Machine learning allows computers "
-            "to learn patterns from data."
-        ),
-        "start": 0.0,
-        "end": 5.0,
-    },
-    {
-        "text": (
-            "Supervised learning uses labeled "
-            "examples to train predictive models."
-        ),
-        "start": 5.0,
-        "end": 10.0,
-    },
-]
-
-
-print("\nTesting embed_chunks()...")
-
-embedded_chunks = embed_chunks(chunks)
-
-print("Total embedded chunks:", len(embedded_chunks))
-
-
-assert len(embedded_chunks) == len(chunks)
-
-
-for index, chunk in enumerate(embedded_chunks):
-
-    print(f"\nChunk {index + 1}")
-    print("Start:", chunk["start"])
-    print("End:", chunk["end"])
-    print("Vector dimensions:", len(chunk["embedding"]))
-
-    assert chunk["text"] == chunks[index]["text"]
-    assert chunk["start"] == chunks[index]["start"]
-    assert chunk["end"] == chunks[index]["end"]
-
-    assert isinstance(chunk["embedding"], list)
-    assert len(chunk["embedding"]) > 0
-
-
-print("\n" + "-" * 60)
-print("Embedding service test passed successfully!")
+    for original, embedded in zip(chunks, embedded_chunks):
+        assert embedded["text"] == original["text"]
+        assert embedded["start"] == original["start"]
+        assert embedded["end"] == original["end"]
+        assert isinstance(embedded["embedding"], list)
+        assert len(embedded["embedding"]) > 0
