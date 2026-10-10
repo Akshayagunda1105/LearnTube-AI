@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../services/api";
 
 function QuizPanel({ sessionId, savedQuiz = [] }) {
@@ -9,7 +9,71 @@ function QuizPanel({ sessionId, savedQuiz = [] }) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    let cancelled = false;
 
+    async function restoreQuiz() {
+      setQuestions([]);
+      setAnswers({});
+      setResults(null);
+      setError("");
+
+      if (savedQuiz.length === 0) {
+        return;
+      }
+
+      // Restore the saved questions.
+      const safeQuestions = savedQuiz.map((question) => ({
+        question: question.question,
+        options: question.options,
+      }));
+
+      setQuestions(safeQuestions);
+
+      try {
+        const response = await api.get(
+          `/api/study-sessions/${sessionId}`
+        );
+
+        if (cancelled) return;
+
+        const attempts = response.data.quiz_attempts || [];
+
+        if (attempts.length > 0) {
+          // Restore the most recent completed attempt.
+          const latestAttempt = attempts[attempts.length - 1];
+
+          setResults({
+            session_id: sessionId,
+            ...latestAttempt,
+          });
+
+          // Restore selected answers for display.
+          const restoredAnswers = {};
+
+          latestAttempt.results?.forEach((result, index) => {
+            if (result.selected_answer) {
+              restoredAnswers[String(index)] =
+                result.selected_answer;
+            }
+          });
+
+          setAnswers(restoredAnswers);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Could not restore quiz results:", err);
+          setError("Could not load previous quiz results.");
+        }
+      }
+    }
+
+    restoreQuiz();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, savedQuiz]);
   const handleGenerateQuiz = async () => {
     setLoading(true);
     setError("");

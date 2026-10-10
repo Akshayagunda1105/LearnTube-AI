@@ -403,7 +403,10 @@ function StudySession() {
             in the video.
           </p>
 
-          <ChatPanel videoId={session.video_id} />
+          <ChatPanel
+            sessionId={sessionId}
+            videoId={session.video_id}
+          />
         </section>
       </main>
     </div>

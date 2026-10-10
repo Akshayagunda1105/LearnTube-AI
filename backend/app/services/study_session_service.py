@@ -85,6 +85,8 @@ def get_study_session(
         "summary": session["summary"],
         "notes": session["notes"],
         "quiz": session["quiz"],
+        "quiz_attempts": session.get("quiz_attempts", []),
+        "chat_history": session.get("chat_history", []),
         "created_at": session["created_at"],
         "updated_at": session["updated_at"],
     }
@@ -279,6 +281,96 @@ def update_study_session_quiz(
                 "quiz": quiz,
                 "updated_at": datetime.now(timezone.utc),
             }
+        },
+    )
+
+    if result.matched_count == 0:
+        return None
+
+    return get_study_session(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    
+def save_quiz_attempt(
+    session_id: str,
+    user_id: str,
+    attempt: dict,
+):
+    """Save a quiz attempt to the user's study session."""
+
+    if not session_id or not session_id.strip():
+        raise ValueError("Session ID cannot be empty")
+
+    if not ObjectId.is_valid(session_id):
+        raise ValueError("Invalid session ID")
+
+    if not user_id or not user_id.strip():
+        raise ValueError("User ID cannot be empty")
+
+    if not ObjectId.is_valid(user_id):
+        raise ValueError("Invalid user ID")
+
+    if not isinstance(attempt, dict):
+        raise ValueError("Quiz attempt must be a dictionary")
+
+    result = study_sessions_collection.update_one(
+        {
+            "_id": ObjectId(session_id),
+            "user_id": ObjectId(user_id),
+        },
+        {
+            "$push": {"quiz_attempts": attempt},
+            "$set": {"updated_at": datetime.now(timezone.utc)},
+        },
+    )
+
+    if result.matched_count == 0:
+        return None
+
+    return get_study_session(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+
+def save_chat_message(
+    session_id: str,
+    user_id: str,
+    message: dict,
+):
+    """Append a chat message to the user's study session."""
+
+    if not session_id or not session_id.strip():
+        raise ValueError("Session ID cannot be empty")
+
+    if not ObjectId.is_valid(session_id):
+        raise ValueError("Invalid session ID")
+
+    if not user_id or not user_id.strip():
+        raise ValueError("User ID cannot be empty")
+
+    if not ObjectId.is_valid(user_id):
+        raise ValueError("Invalid user ID")
+
+    if not isinstance(message, dict):
+        raise ValueError("Chat message must be a dictionary")
+
+    if message.get("role") not in ("user", "assistant"):
+        raise ValueError("Invalid chat message role")
+
+    if not isinstance(message.get("content"), str):
+        raise ValueError("Chat message content must be a string")
+
+    result = study_sessions_collection.update_one(
+        {
+            "_id": ObjectId(session_id),
+            "user_id": ObjectId(user_id),
+        },
+        {
+            "$push": {"chat_history": message},
+            "$set": {"updated_at": datetime.now(timezone.utc)},
         },
     )
 

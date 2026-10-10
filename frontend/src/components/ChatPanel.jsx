@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../services/api";
 
 function formatTimestamp(seconds) {
@@ -17,35 +17,57 @@ function formatTimestamp(seconds) {
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
-function ChatPanel({ videoId }) {
+function ChatPanel({ sessionId, videoId }) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadChatHistory() {
+      setMessages([]);
+      setError("");
+
+      try {
+        const response = await api.get(
+          `/api/study-sessions/${sessionId}`
+        );
+
+        if (!cancelled) {
+          setMessages(response.data.chat_history || []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err);
+          setError("Could not load previous chat messages.");
+        }
+      }
+    }
+
+    if (sessionId) {
+      loadChatHistory();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     const trimmedQuestion = question.trim();
 
-    if (!trimmedQuestion || loading) {
+    if (!trimmedQuestion || loading || !sessionId) {
       return;
     }
 
-    // Send all previous messages to the backend.
     const history = messages.map((message) => ({
       role: message.role,
       content: message.content,
     }));
-
-    // Display the current question immediately.
-    setMessages((previous) => [
-      ...previous,
-      {
-        role: "user",
-        content: trimmedQuestion,
-      },
-    ]);
 
     setQuestion("");
     setLoading(true);
@@ -53,19 +75,17 @@ function ChatPanel({ videoId }) {
 
     try {
       const response = await api.post("/api/chat", {
+        session_id: sessionId,
         video_id: videoId,
         question: trimmedQuestion,
         history,
       });
 
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: response.data.answer,
-          sources: response.data.sources || [],
-        },
-      ]);
+      const updatedSession = await api.get(
+        `/api/study-sessions/${sessionId}`
+      );
+
+      setMessages(updatedSession.data.chat_history || []);
     } catch (err) {
       console.error(err);
 
@@ -137,9 +157,7 @@ function ChatPanel({ videoId }) {
       {error && <p role="alert">{error}</p>}
 
       <form onSubmit={handleSubmit}>
-        <label htmlFor="chat-question">
-          Your question
-        </label>
+        <label htmlFor="chat-question">Your question</label>
 
         <textarea
           id="chat-question"

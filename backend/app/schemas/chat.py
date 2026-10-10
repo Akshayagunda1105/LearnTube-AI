@@ -10,6 +10,7 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
+    session_id: str
     video_id: str
     question: str
     history: list[ChatMessage] = Field(default_factory=list)

@@ -1,3 +1,4 @@
+
 from datetime import datetime, timezone
 
 from bson import ObjectId
@@ -14,9 +15,7 @@ def create_study_session_document(
     original_transcript: list = None,
     english_transcript: list = None,
 ):
-    """
-    Create a MongoDB document for a study session.
-    """
+    """Create a MongoDB document for a study session."""
 
     if not user_id or not user_id.strip():
         raise ValueError("User ID cannot be empty")
@@ -45,6 +44,8 @@ def create_study_session_document(
         "summary": None,
         "notes": [],
         "quiz": [],
+        "quiz_attempts": [],
+        "chat_history": [],
         "created_at": now,
         "updated_at": now,
     }

@@ -9,6 +9,7 @@ from app.services.study_session_service import (
     update_study_session_summary,
     update_study_session_notes,
     update_study_session_quiz,
+    save_quiz_attempt,
 )
 from app.services.summarizer_service import (
     create_summary_chunks,
@@ -22,6 +23,7 @@ from app.services.notes_service import (
     combine_note_sections,
 )
 
+from datetime import datetime, timezone
 
 router = APIRouter(
     prefix="/api/study-sessions",
@@ -427,13 +429,32 @@ def submit_session_quiz(
                 "explanation": question["explanation"],
             })
 
-        return {
-            "session_id": session_id,
+
+        quiz_attempt = {
             "score": score,
             "total_questions": len(questions),
             "percentage": round(score / len(questions) * 100, 2),
             "results": results,
+            "submitted_at": datetime.now(timezone.utc),
         }
+
+        updated_session = save_quiz_attempt(
+            session_id=session_id,
+            user_id=user_id,
+            attempt=quiz_attempt,
+        )
+
+        if updated_session is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Study session not found",
+            )
+
+        return {
+            "session_id": session_id,
+            **quiz_attempt,
+        }
+
 
     except ValueError as error:
         raise HTTPException(
